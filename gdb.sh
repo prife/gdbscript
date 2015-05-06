@@ -5,7 +5,7 @@ LOCAL_PATH=`pwd`
 DEVICE=hammerhead
 OBJDIR=$LOCAL_PATH/out/target/product/$DEVICE/symbols/system
 PROG=$OBJDIR/bin/mediaserver
-#PROG=$GECKO_OBJDIR/bin/app_process_gaia
+#PROG=$OBJDIR/bin/app_process_gaia
 
 ADB=adb
 GDB=arm-linux-androideabi-gdb
@@ -17,15 +17,32 @@ GDB_PORT=$((20000 + $(id -u) % 50000))
 
 $ADB forward tcp:$GDB_PORT tcp:$GDB_PORT
 
+function kill_gdb() {
+    gdbpid=`$ADB shell ps | grep gdbserver | tail -n 1 | awk '{print $2}'`
+    if [ -z $gdbpid ]; then
+      echo gdbserver is not running!
+    else
+        $ADB shell "kill -9 $gdbpid"
+    fi
+}
+
+function get_app_pid() {
+    targetpid=`$ADB shell ps|grep $1|tail -n 1|awk '{print $2}'`;
+    echo $targetpid;
+}
+
 if [ "$1" = "attach" ]; then
    # attach mode
-   WRT_PID=$2
+   kill_gdb
+
+   WRT_PID=$(get_app_pid $2)
+   echo GDB_PORT = $GDB_PORT WRT_PID = $WRT_PID
+
    if [ -z $WRT_PID ]; then
       echo Error: No PID to attach to. WRT not running?
       exit 1
    fi
 
-   echo GDB_PORT = $GDB_PORT WRT_PID = $WRT_PID 
    $ADB shell gdbserver :$GDB_PORT --attach $WRT_PID &
 else
    # find mode
