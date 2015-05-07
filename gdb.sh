@@ -1,16 +1,26 @@
 #!/bin/bash
 
+#########################################################
+# If DEFAULT_GDB_UI == cgdb, pls install cgdb           #
+# If DEFAULT_GDB_UI == emacs, pls install emacs         #
+#                                                       #
+# + install emacs                                       #
+# apt-get install emacs                                 #
+# + install cgdb                                        #
+#########################################################
+
 LOCAL_PATH=`pwd`
 
+DEFAULT_GDB_UI=cgdb
 DEVICE=hammerhead
 OBJDIR=$LOCAL_PATH/out/target/product/$DEVICE/symbols/system
 PROG=$OBJDIR/bin/mediaserver
 #PROG=$OBJDIR/bin/app_process_gaia
 
 ADB=adb
-GDB=arm-linux-androideabi-gdb
-#GDB=$LOCAL_PATH/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.6/bin/arm-linux-androideabi-gdb
-GDB="cgdb -d $GDB"
+GDBPATH=arm-linux-androideabi-gdb
+#GDBPATH=$LOCAL_PATH/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.6/bin/arm-linux-androideabi-gdb
+GDB="cgdb -d $GDBPATH"
 
 GDBINIT=/tmp/cos.gdbinit.`whoami`
 
@@ -67,5 +77,51 @@ echo "set solib-absolute-prefix $OBJDIR/../" > $GDBINIT
 echo "set solib-search-path $OBJDIR/lib" >> $GDBINIT
 echo "target extended-remote :$GDB_PORT" >> $GDBINIT
 
-echo $GDB -x $GDBINIT $PROG
-$GDB -x $GDBINIT $PROG
+if [[ $DEFAULT_GDB_UI == "cgdb" ]]; then
+    echo $GDB -x $GDBINIT $PROG
+    $GDB -x $GDBINIT $PROG
+fi
+
+if [[ $DEFAULT_GDB_UI == "emacs" ]]; then
+    echo "cmd $0"
+    tail -33 $0 > /tmp/gdb.el
+    echo "emacs -l /tmp/gdb.el $GDBPATH -x $GDBINIT $PROG"
+    emacs -l /tmp/gdb.el $GDBPATH -x $GDBINIT $PROG
+fi
+
+exit 0
+#################### end here #################################
+
+;;; package --- Summary
+;;; Commentary:
+;;; code:
+
+;; (defconst gdbpath "/usr/bin/gdb"
+;;   "set the gdb path")
+
+;; We can't using with-output-to-string in emacs, because the implement
+;; is diff than cl
+(defun concatString (lst)
+  "concatenates a list of strings"
+  (if (listp lst)
+      (let ((str ""))
+        (dolist (item lst)
+          (when (stringp item)
+              (setq str (concat str item))
+              (setq str (concat str " "))))
+        str)))
+
+(defun gdb-multiwindows-main ()
+  "run gdb command with multiwindows show"
+  (setq gdb-many-windows t)
+  (let ((gdb-args "")
+        (gdb-cmd ""))
+    (setq gdb-cmd (car command-line-args-left))
+    (setq command-line-args-left (cdr command-line-args-left))
+    (if (>= emacs-major-version 24)
+        (setq gdb-args " --i=mi ")
+      (setq gdb-args " --annotate=3 "))
+    ;;(message-box (concatString (cons gdb-cmd (cons gdb-args command-line-args-left))))
+    (gdb (concatString (cons gdb-cmd (cons  gdb-args command-line-args-left))))))
+
+(gdb-multiwindows-main)
