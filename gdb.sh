@@ -107,8 +107,8 @@ exit 0
       (let ((str ""))
         (dolist (item lst)
           (when (stringp item)
-              (setq str (concatenate 'string str item))
-              (setq str (concatenate 'string str " "))))
+              (setq str (concat str item))
+              (setq str (concat str " "))))
         str)))
 
 (defun gdb-multiwindows-main ()
