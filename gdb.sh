@@ -10,6 +10,7 @@ PROG=$OBJDIR/bin/mediaserver
 ADB=adb
 GDB=arm-linux-androideabi-gdb
 #GDB=$LOCAL_PATH/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.6/bin/arm-linux-androideabi-gdb
+GDB="cgdb -d $GDB"
 
 GDBINIT=/tmp/cos.gdbinit.`whoami`
 
